@@ -1,27 +1,63 @@
-name: Update Log
+name: Auto commit and push
 
 on:
   schedule:
-    - cron: '0 14 * * *'
-    - cron: '0 18 * * *'
-    - cron: '0 2 * * *'
-  workflow_dispatch:
+    # Corre cada día a las 09:00 y 21:00 (hora UTC). Ajusta a tu preferencia.
+    - cron: "0 9,21 * * *"
+  workflow_dispatch: # Permite ejecutarlo manualmente desde Actions
+
+permissions:
+  contents: write  # Permite que GITHUB_TOKEN haga push
+
+concurrency:
+  group: auto-commit
+  cancel-in-progress: false
 
 jobs:
-  update-log:
+  commit:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
-      - name: Run update log script
-        run: bash scripts/update-log.sh
+      - name: Set Git identity
+        run: |
+          git config user.name "AnibalMaxDiaz"
+          git config user.email "148412143+AnibalMaxDiaz@users.noreply.github.com"
+
+      - name: Ensure logs directory exists
+        run: |
+          mkdir -p logs
+
+      - name: Update daily log
+        run: |
+          TS="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo "$TS - Auto update executed" >> logs/daily.log
+
+      - name: Optionally update settings
+        run: |
+          echo "last_run_utc: $(date -u +'%Y-%m-%d %H:%M:%S')" > settings.yml
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Commit changes
+        if: steps.changes.outputs.changed == 'true'
         run: |
-          git config --local user.name "AnibalMaxDiaz"
-          git config --local user.email "148412143+AnibalMaxDiaz@users.noreply.github.com"
-          git add logs/entries.txt
-          git commit -m "Update log entry: $(date '+%Y-%m-%d %H:%M:%S')"
-          git push origin main  # Change 'main' to your default branch if different
+          git add -A
+          git commit -m "chore: auto-update logs and settings [skip ci]"
+
+      - name: Push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git push origin HEAD:main
