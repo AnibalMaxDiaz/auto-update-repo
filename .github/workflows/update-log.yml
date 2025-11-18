@@ -1,0 +1,25 @@
+name: Update Log
+
+on:
+  schedule:
+    - cron: '0 0,8,16 * * *'  # Runs at midnight, 8 AM, and 4 PM UTC
+  workflow_dispatch:
+
+jobs:
+  update-log:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run update log script
+        run: bash scripts/update-log.sh
+
+      - name: Commit changes
+        run: |
+          git config --local user.name "GitHub Action"
+          git config --local user.email "action@github.com"
+          git add logs/entries.txt
+          git commit -m "Update log entry: $(date '+%Y-%m-%d %H:%M:%S')"
+          git push origin main  # Change 'main' to your default branch if different
