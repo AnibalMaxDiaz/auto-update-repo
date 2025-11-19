@@ -2,9 +2,10 @@ name: Update Log
 
 on:
   schedule:
-    # Ejecuta todos los días a las 09:00 y 21:00 UTC (Bogotá = UTC-5)
-    - cron: "0 14,2 * * *"
-  workflow_dispatch: # Permite ejecución manual desde GitHub
+    - cron: '0 14 * * *'
+    - cron: '0 18 * * *'
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -22,8 +23,8 @@ jobs:
 
       - name: Configurar identidad Git
         run: |
-          git config user.name "AnibalMaxDiaz"
-          git config user.email "148412143+AnibalMaxDiaz@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Crear o actualizar log
         run: |
